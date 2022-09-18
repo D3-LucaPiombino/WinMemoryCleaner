@@ -1,32 +1,23 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Nuke.Common;
-using Nuke.Common.CI;
-using Nuke.Common.CI.AppVeyor;
-using Nuke.Common.CI.AzurePipelines;
+using Nuke.Common.ChangeLog;
 using Nuke.Common.CI.GitHubActions;
-using Nuke.Common.CI.TeamCity;
-using Nuke.Common.Execution;
 using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
-using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
+using Nuke.Common.Tools.GitHub;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Utilities.Collections;
-
-using static Nuke.Common.ControlFlow;
-using static Nuke.Common.Tools.DotNet.DotNetTasks;
-using static Nuke.Common.IO.FileSystemTasks;
-using static Nuke.Common.Tools.ReSharper.ReSharperTasks;
-using System.IO.Compression;
-using Nuke.Common.ChangeLog;
-using Nuke.Common.Tools.GitHub;
-using Octokit.Internal;
 using Octokit;
+using Octokit.Internal;
+using System;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Threading.Tasks;
+using static Nuke.Common.IO.FileSystemTasks;
+using static Nuke.Common.IO.PathConstruction;
+using static Nuke.Common.Tools.DotNet.DotNetTasks;
 
 [GitHubActions(
     "continuous",
@@ -34,13 +25,15 @@ using System.Threading.Tasks;
     //GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     FetchDepth = 0,
-    OnPushBranches = new[] { "master", "feature/**", "releases/**" },
-    OnPullRequestBranches = new[] { "releases/**", "feature/**" },
+    OnPushBranches = new[] { "master", "feature/**", "release/**" },
+    OnPullRequestBranches = new[] { "release/**", "feature/**" },
     InvokedTargets = new[] {
         nameof(Compile),
     },
     EnableGitHubToken = true,
-    PublishArtifacts = true
+    PublishArtifacts = true,
+    OnPullRequestTags = new[] { "publish/**" },
+    OnPushTags = new[] { "" }
     //ImportSecrets = new[] { nameof(MyGetApiKey), nameof(NuGetApiKey) }
 )]
 class Build : NukeBuild
@@ -58,23 +51,23 @@ class Build : NukeBuild
 
     [Solution(GenerateProjects = true)]
     readonly Solution Solution;
-    
+
+    [GitVersion]
+    readonly GitVersion GitVersion;
+
+    [GitRepository]
+    readonly GitRepository GitRepository;
+
     static AbsolutePath SourceDirectory => RootDirectory / "src";
     static AbsolutePath OutputDirectory => RootDirectory / "output";
     static AbsolutePath ArtifactsDirectory => OutputDirectory / "artifacts";
-    
+    static GitHubActions GitHubActions => GitHubActions.Instance;
     static string PackageContentType => "application/octet-stream";
     static string ChangeLogFile => RootDirectory / "CHANGELOG.md";
-
-    [GitVersion]
-    GitVersion GitVersion;
-
-    [GitRepository]
-    GitRepository GitRepository;
-
-    static GitHubActions GitHubActions => GitHubActions.Instance;
+    
 
     Target Clean => _ => _
+        .Description($"Clean.")
         .Before(Compile)
         .Executes(() =>
         {
@@ -83,6 +76,7 @@ class Build : NukeBuild
         });
 
     Target Compile => _ => _
+        .Description($"Build artifacts.")
         .DependsOn(Clean)
         .Triggers(Publish)
         .Executes(() =>
@@ -100,41 +94,37 @@ class Build : NukeBuild
         });
 
     Target Publish => _ => _
+        .Description($"Publish artifacts.")
         .Requires(() => Configuration.Equals(Configuration.Release))
-        //.Requires(() => GitHubAuthenticationToken)
-        //.OnlyWhenDynamic(() => GitVersion.BranchName.Equals("master") || GitVersion.BranchName.Equals("origin/master"))
-        //.Produces(ArtifactsDirectory)
         .Triggers(CreateRelease)
         .Executes(() =>
         {
             var name = Solution.WinMemoryCleaner_Service.Name;
             var publishedPackagePath = OutputDirectory / "publish" / name;
-            var package = ArtifactsDirectory / $"WindowsService_{GitVersion.SemVer}.zip";
+            var artifact = ArtifactsDirectory / $"WindowsService_{GitVersion.SemVer}.zip";
 
             DotNetPublish(s => s
                 .SetProject(Solution.WinMemoryCleaner_Service)
                 .SetConfiguration(Configuration)
-                //.EnablePublishSingleFile()
-                //.EnablePublishTrimmed()
-                //.EnablePublishReadyToRun()
-                //.EnableSelfContained()
-                
-                // .SetRuntime("win-x64")
                 .SetOutput(publishedPackagePath)
                 .EnableNoBuild()
                 .EnableNoRestore()
                 .SetNoLogo(true)
             );
-            DeleteFile(package);
             EnsureExistingDirectory(ArtifactsDirectory);
-            ZipFile.CreateFromDirectory(publishedPackagePath, package);
+            ZipFile.CreateFromDirectory(publishedPackagePath, artifact);
         });
 
     Target CreateRelease => _ => _
-        .Description($"Creating release for the publishable version.")
+        .Description($"Creating release for publishable artifacts.")
+        .DependsOn(Publish)
         .Requires(() => Configuration.Equals(Configuration.Release))
         .OnlyWhenStatic(() => GitHubActions.Token != null)
-        // .OnlyWhenStatic(() => GitRepository.IsOnMainOrMasterBranch() || GitRepository.IsOnReleaseBranch())
+
+        //.OnlyWhenStatic(() =>
+        //    GitRepository.IsOnMainOrMasterBranch() ||
+        //    GitRepository.IsOnReleaseBranch()
+        //)
         .Executes(async () =>
         {
             var credentials = new Credentials(GitHubActions.Token);
@@ -148,6 +138,7 @@ class Build : NukeBuild
             var latestChangeLog = changeLogSectionEntries
                .Aggregate((c, n) => c + Environment.NewLine + n);
 
+            
             var newRelease = new NewRelease(releaseTag)
             {
                 TargetCommitish = GitVersion.Sha,
@@ -162,18 +153,20 @@ class Build : NukeBuild
                 .Repository
                 .Release.Create(owner, name, newRelease);
 
-            PathConstruction
-                .GlobFiles(ArtifactsDirectory, "*.zip")
+            GlobFiles(ArtifactsDirectory, "*.zip")
                 //.Where(x => !x.EndsWith(ExcludedArtifactsType))
                 .ForEach(async x => await UploadReleaseAssetToGithub(createdRelease, x));
 
-            await GitHubTasks
-                .GitHubClient
-                .Repository
-                .Release
-                .Edit(owner, name, createdRelease.Id, new ReleaseUpdate { Draft = false });
+            if(!GitHubActions.IsPullRequest)
+            {
+                await GitHubTasks
+                    .GitHubClient
+                    .Repository
+                    .Release
+                    .Edit(owner, name, createdRelease.Id, new ReleaseUpdate { Draft = false });
+            }
 
-           static async Task UploadReleaseAssetToGithub(Release release, string asset)
+            static async Task UploadReleaseAssetToGithub(Release release, string asset)
            {
                await using var artifactStream = File.OpenRead(asset);
                var fileName = Path.GetFileName(asset);

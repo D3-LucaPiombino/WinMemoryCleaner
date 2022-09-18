@@ -19,6 +19,7 @@ DOTNET_CHANNEL="Current"
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 export DOTNET_MULTILEVEL_LOOKUP=0
+export DOTNET_GENERATE_ASPNET_CERTIFICATE=0
 
 ###########################################################################
 # EXECUTION
