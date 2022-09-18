@@ -1,0 +1,16 @@
+assembly-versioning-scheme: MajorMinorPatch
+mode: Mainline
+tag-prefix: '[vV]'
+branches:
+  master:
+    tag: ''
+    increment: Minor
+  release:
+    regex: ^releases?[/-]
+    mode: ContinuousDelivery
+    track-merge-target: false
+    is-release-branch: false
+    is-mainline: true
+    increment: Patch
+ignore:
+  sha: []

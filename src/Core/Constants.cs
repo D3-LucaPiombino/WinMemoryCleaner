@@ -1,38 +1,19 @@
-﻿namespace WinMemoryCleaner
+﻿namespace WinMemoryCleaner.Core
 {
-    internal static class Constants
+    public static class Constants
     {
-        internal static class App
+        public static class Windows
         {
-            internal const string GitHub = "github.com/IgorMundstein";
-            internal const string GitHubUri ="https://github.com/IgorMundstein/WinMemoryCleaner/";
-            internal const string License = "GNU General Public License v3.0";
-            internal const string Title = "Windows Memory Cleaner";
-
-            internal static class Log
-            {
-                internal const string DatetimeFormat = "yyyy-MM-dd HH:mm:ss.fff";
-            }
-
-            internal static class RegistryKey
-            {
-                internal const string MemoryAreas = "MemoryAreas";
-                internal const string Name = @"SOFTWARE\WinMemoryCleaner";
-            }
-        }
-
-        internal static class Windows
-        {
-            internal const string DebugPrivilege = "SeDebugPrivilege";
-            internal const string IncreaseQuotaName = "SeIncreaseQuotaPrivilege";
-            internal const int MemoryFlushModifiedList = 3;
-            internal const int MemoryPurgeLowPriorityStandbyList = 5;
-            internal const int MemoryPurgeStandbyList = 4;
-            internal const int PrivilegeEnabled = 2;
-            internal const string ProfileSingleProcessName = "SeProfileSingleProcessPrivilege";
-            internal const int SystemCombinePhysicalMemoryInformation = 130;
-            internal const int SystemFileCacheInformation = 21;
-            internal const int SystemMemoryListInformation = 80;
+            public const string DebugPrivilege = "SeDebugPrivilege";
+            public const string IncreaseQuotaName = "SeIncreaseQuotaPrivilege";
+            public const int MemoryFlushModifiedList = 3;
+            public const int MemoryPurgeLowPriorityStandbyList = 5;
+            public const int MemoryPurgeStandbyList = 4;
+            public const int PrivilegeEnabled = 2;
+            public const string ProfileSingleProcessName = "SeProfileSingleProcessPrivilege";
+            public const int SystemCombinePhysicalMemoryInformation = 130;
+            public const int SystemFileCacheInformation = 21;
+            public const int SystemMemoryListInformation = 80;
         }
     }
 }
