@@ -135,7 +135,7 @@ class Build : NukeBuild
         });
 
     Target CreateGitHubRelease => _ => _
-        .Description($"Creating release for publishable artifacts")
+        .Description($"Creating GitHub Release")
         .DependsOn(Publish)
         .OnlyWhenStatic(() => Configuration.Equals(Configuration.Release))
         .OnlyWhenStatic(() => HasGitHubToken)
