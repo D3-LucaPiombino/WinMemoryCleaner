@@ -1,19 +1,19 @@
 ﻿namespace WinMemoryCleaner.Core
 {
-    internal static class Constants
+    public static class Constants
     {
-        internal static class Windows
+        public static class Windows
         {
-            internal const string DebugPrivilege = "SeDebugPrivilege";
-            internal const string IncreaseQuotaName = "SeIncreaseQuotaPrivilege";
-            internal const int MemoryFlushModifiedList = 3;
-            internal const int MemoryPurgeLowPriorityStandbyList = 5;
-            internal const int MemoryPurgeStandbyList = 4;
-            internal const int PrivilegeEnabled = 2;
-            internal const string ProfileSingleProcessName = "SeProfileSingleProcessPrivilege";
-            internal const int SystemCombinePhysicalMemoryInformation = 130;
-            internal const int SystemFileCacheInformation = 21;
-            internal const int SystemMemoryListInformation = 80;
+            public const string DebugPrivilege = "SeDebugPrivilege";
+            public const string IncreaseQuotaName = "SeIncreaseQuotaPrivilege";
+            public const int MemoryFlushModifiedList = 3;
+            public const int MemoryPurgeLowPriorityStandbyList = 5;
+            public const int MemoryPurgeStandbyList = 4;
+            public const int PrivilegeEnabled = 2;
+            public const string ProfileSingleProcessName = "SeProfileSingleProcessPrivilege";
+            public const int SystemCombinePhysicalMemoryInformation = 130;
+            public const int SystemFileCacheInformation = 21;
+            public const int SystemMemoryListInformation = 80;
         }
     }
 }

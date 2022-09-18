@@ -44,7 +44,7 @@ class Build : NukeBuild
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
     ///   - Microsoft VSCode           https://nuke.build/vscode
 
-    public static int Main () => Execute<Build>(x => x.Clean);
+    public static int Main () => Execute<Build>(x => x.Compile);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
@@ -109,6 +109,7 @@ class Build : NukeBuild
                 .SetNoLogo(true)
             );
             DeleteFile(package);
+            EnsureExistingDirectory(PackagesDirectory);
             ZipFile.CreateFromDirectory(publishedPackagePath, package);
         });
 }
