@@ -23,13 +23,19 @@ on:
       - 'feature/**'
       - 'release/**'
     tags:
-      - 
+      - 'publish/**'
+    paths:
+      - '!*.md'
+      - '!**/*.md'
   pull_request:
     branches:
       - 'release/**'
       - 'feature/**'
     tags:
       - 'publish/**'
+    paths:
+      - '!*.md'
+      - '!**/*.md'
 
 jobs:
   windows-latest:
