@@ -131,12 +131,12 @@ class Build : NukeBuild
         });
 
     Target CreateRelease => _ => _
-       .Description($"Creating release for the publishable version.")
-       .Requires(() => Configuration.Equals(Configuration.Release))
-       .Requires(() => GitHubActions.Token)
-       // .OnlyWhenStatic(() => GitRepository.IsOnMainOrMasterBranch() || GitRepository.IsOnReleaseBranch())
-       .Executes(async () =>
-       {
+        .Description($"Creating release for the publishable version.")
+        .Requires(() => Configuration.Equals(Configuration.Release))
+        .OnlyWhenStatic(() => GitHubActions.Token != null)
+        // .OnlyWhenStatic(() => GitRepository.IsOnMainOrMasterBranch() || GitRepository.IsOnReleaseBranch())
+        .Executes(async () =>
+        {
             var credentials = new Credentials(GitHubActions.Token);
             GitHubTasks.GitHubClient = new GitHubClient(new ProductHeaderValue(nameof(NukeBuild)),
                new InMemoryCredentialStore(credentials));
@@ -185,7 +185,7 @@ class Build : NukeBuild
                };
                await GitHubTasks.GitHubClient.Repository.Release.UploadAsset(release, assetUpload);
            }
-       });
+        });
 
    
 }
