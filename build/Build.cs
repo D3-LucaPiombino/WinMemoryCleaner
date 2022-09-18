@@ -48,26 +48,27 @@ class Build : NukeBuild
 
     [Nuke.Common.Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
+    
 
     [Solution(GenerateProjects = true)]
     readonly Solution Solution;
 
-    [GitVersion]
+    [GitVersion(UpdateBuildNumber = true)]
     readonly GitVersion GitVersion;
 
     [GitRepository]
     readonly GitRepository GitRepository;
 
+    static bool HasGitHubToken => GitHubActions?.Token != null;
     static AbsolutePath SourceDirectory => RootDirectory / "src";
     static AbsolutePath OutputDirectory => RootDirectory / "output";
     static AbsolutePath ArtifactsDirectory => OutputDirectory / "artifacts";
     static GitHubActions GitHubActions => GitHubActions.Instance;
     static string PackageContentType => "application/octet-stream";
     static string ChangeLogFile => RootDirectory / "CHANGELOG.md";
-    
 
     Target Clean => _ => _
-        .Description($"Clean.")
+        .Description($"Clean")
         .Before(Compile)
         .Executes(() =>
         {
@@ -75,9 +76,24 @@ class Build : NukeBuild
             EnsureCleanDirectory(OutputDirectory);
         });
 
+    Target GitVersionDump => _ => _
+        .Description($"GitVersion")
+        .DependentFor(Compile)
+        .Executes(() =>
+        {
+            foreach (var item in GitVersion.ToPropertyDictionary(k => k.Name, v => v))
+            {
+                Serilog.Log.Information("{property}: {value}", item.Key, item.Value);
+            }
+        });
+
     Target Compile => _ => _
-        .Description($"Build artifacts.")
+        .Description($"Build artifacts")
         .DependsOn(Clean)
+        // We want to trigger a publish when we compile but only
+        // if the configuration is Release.
+        // If we run the Publish target and instead depends from Compile
+        // with configuration Debug, we want to always run compile.
         .Triggers(Publish)
         .Executes(() =>
         {
@@ -94,9 +110,10 @@ class Build : NukeBuild
         });
 
     Target Publish => _ => _
-        .Description($"Publish artifacts.")
-        .Requires(() => Configuration.Equals(Configuration.Release))
-        .Triggers(CreateRelease)
+        .Description($"Publish artifacts")
+        .DependsOn(Compile)
+        .OnlyWhenStatic(() => Configuration.Equals(Configuration.Release))
+        .Triggers(CreateGitHubRelease)
         .Executes(() =>
         {
             var name = Solution.WinMemoryCleaner_Service.Name;
@@ -115,11 +132,11 @@ class Build : NukeBuild
             ZipFile.CreateFromDirectory(publishedPackagePath, artifact);
         });
 
-    Target CreateRelease => _ => _
-        .Description($"Creating release for publishable artifacts.")
+    Target CreateGitHubRelease => _ => _
+        .Description($"Creating release for publishable artifacts")
         .DependsOn(Publish)
-        .Requires(() => Configuration.Equals(Configuration.Release))
-        .OnlyWhenStatic(() => GitHubActions.Token != null)
+        .OnlyWhenStatic(() => Configuration.Equals(Configuration.Release))
+        .OnlyWhenStatic(() => HasGitHubToken)
 
         //.OnlyWhenStatic(() =>
         //    GitRepository.IsOnMainOrMasterBranch() ||
@@ -138,7 +155,6 @@ class Build : NukeBuild
             var latestChangeLog = changeLogSectionEntries
                .Aggregate((c, n) => c + Environment.NewLine + n);
 
-            
             var newRelease = new NewRelease(releaseTag)
             {
                 TargetCommitish = GitVersion.Sha,
@@ -148,37 +164,47 @@ class Build : NukeBuild
                 Body = latestChangeLog
             };
 
-            var createdRelease = await GitHubTasks
+            var artifacts = GlobFiles(ArtifactsDirectory, "*.zip");
+
+            
+            Serilog.Log.Information("Create draft release {release} with {count} linked artifacts", newRelease, artifacts.Count);
+
+            var release = await GitHubTasks
                 .GitHubClient
                 .Repository
                 .Release.Create(owner, name, newRelease);
 
-            GlobFiles(ArtifactsDirectory, "*.zip")
-                //.Where(x => !x.EndsWith(ExcludedArtifactsType))
-                .ForEach(async x => await UploadReleaseAssetToGithub(createdRelease, x));
+            Serilog.Log.Information("Create draft release {releaseName}", release.Name);
 
-            if(!GitHubActions.IsPullRequest)
+            artifacts
+                //.Where(x => !x.EndsWith(ExcludedArtifactsType))
+                .ForEach(async x => await UploadReleaseAssetToGithub(release, x));
+
+            if (!GitHubActions.IsPullRequest)
             {
+                Serilog.Log.Information("Publish release {releaseName}", release.Name);
                 await GitHubTasks
                     .GitHubClient
                     .Repository
                     .Release
-                    .Edit(owner, name, createdRelease.Id, new ReleaseUpdate { Draft = false });
+                    .Edit(owner, name, release.Id, new ReleaseUpdate { Draft = false });
             }
 
             static async Task UploadReleaseAssetToGithub(Release release, string asset)
-           {
-               await using var artifactStream = File.OpenRead(asset);
-               var fileName = Path.GetFileName(asset);
-               var assetUpload = new ReleaseAssetUpload
-               {
-                   FileName = fileName,
-                   ContentType = PackageContentType,
-                   RawData = artifactStream,
-               };
-               await GitHubTasks.GitHubClient.Repository.Release.UploadAsset(release, assetUpload);
-           }
+            {
+                Serilog.Log.Information("Upload artifact {artifactName} and link it to release {releaseName}", asset, release.Name);
+
+                await using var artifactStream = File.OpenRead(asset);
+                var fileName = Path.GetFileName(asset);
+                var assetUpload = new ReleaseAssetUpload
+                {
+                    FileName = fileName,
+                    ContentType = PackageContentType,
+                    RawData = artifactStream,
+                };
+                await GitHubTasks.GitHubClient.Repository.Release.UploadAsset(release, assetUpload);
+            }
         });
 
-   
+    
 }

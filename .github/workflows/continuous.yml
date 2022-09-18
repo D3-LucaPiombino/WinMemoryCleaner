@@ -21,11 +21,15 @@ on:
     branches:
       - master
       - 'feature/**'
-      - 'releases/**'
+      - 'release/**'
+    tags:
+      - 
   pull_request:
     branches:
-      - 'releases/**'
+      - 'release/**'
       - 'feature/**'
+    tags:
+      - 'publish/**'
 
 jobs:
   windows-latest:
