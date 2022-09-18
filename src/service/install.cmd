@@ -1,0 +1,1 @@
+sc.exe create "Windows Memory Cache Cleaner" binpath="%cd%\WinMemoryCleaner.Service.exe"
