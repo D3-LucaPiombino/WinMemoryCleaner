@@ -33,9 +33,9 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
         nameof(Compile),
     },
     EnableGitHubToken = true,
-    PublishArtifacts = true,
-    OnPullRequestTags = new[] { "publish_*" },
-    OnPushTags = new[] { "publish_*" }
+    PublishArtifacts = true
+    //OnPullRequestTags = new[] { "publish_*" },
+    //OnPushTags = new[] { "publish_*" }
     //ImportSecrets = new[] { nameof(MyGetApiKey), nameof(NuGetApiKey) }
 )]
 class Build : NukeBuild
