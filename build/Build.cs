@@ -24,7 +24,8 @@ using System.IO.Compression;
 
 [GitHubActions(
     "continuous",
-    GitHubActionsImage.UbuntuLatest,
+    GitHubActionsImage.WindowsLatest,
+    //GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     FetchDepth = 0,
     OnPushBranches = new[] { "master", "feature/**", "releases/**" },
