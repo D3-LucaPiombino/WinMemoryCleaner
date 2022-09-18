@@ -193,7 +193,7 @@ class Build : NukeBuild
                 TargetCommitish = GitVersion.Sha,
                 Draft = true,
                 Name = $"v{releaseTag}",
-                Prerelease = !string.IsNullOrEmpty(GitVersion.PreReleaseTag),
+                Prerelease = !string.IsNullOrEmpty(GitVersion.PreReleaseTagWithDash),
                 Body = latestChangeLog
             };
 
