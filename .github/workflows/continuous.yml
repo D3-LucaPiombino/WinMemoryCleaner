@@ -46,7 +46,3 @@ jobs:
         run: ./build.cmd Compile
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/upload-artifact@v1
-        with:
-          name: packages
-          path: output/packages

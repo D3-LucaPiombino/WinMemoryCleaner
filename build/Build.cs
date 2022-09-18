@@ -21,6 +21,12 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.Tools.ReSharper.ReSharperTasks;
 using System.IO.Compression;
+using Nuke.Common.ChangeLog;
+using Nuke.Common.Tools.GitHub;
+using Octokit.Internal;
+using Octokit;
+using System.IO;
+using System.Threading.Tasks;
 
 [GitHubActions(
     "continuous",
@@ -47,20 +53,29 @@ class Build : NukeBuild
 
     public static int Main () => Execute<Build>(x => x.Compile);
 
-    [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
+    [Nuke.Common.Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
     [Solution(GenerateProjects = true)]
     readonly Solution Solution;
-    AbsolutePath SourceDirectory => RootDirectory / "src";
-    AbsolutePath OutputDirectory => RootDirectory / "output";
-    AbsolutePath PackagesDirectory => OutputDirectory / "packages";
+    
+    static AbsolutePath SourceDirectory => RootDirectory / "src";
+    static AbsolutePath OutputDirectory => RootDirectory / "output";
+    static AbsolutePath ArtifactsDirectory => OutputDirectory / "artifacts";
+    
+    static string PackageContentType => "application/octet-stream";
+    static string ChangeLogFile => RootDirectory / "CHANGELOG.md";
 
     [GitVersion]
     GitVersion GitVersion;
 
+    [GitRepository]
+    GitRepository GitRepository;
+
+    static GitHubActions GitHubActions => GitHubActions.Instance;
+
     Target Clean => _ => _
-        //.Before(Compile)
+        .Before(Compile)
         .Executes(() =>
         {
             SourceDirectory.GlobDirectories("*/bin", "*/obj").ForEach(DeleteDirectory);
@@ -88,29 +103,89 @@ class Build : NukeBuild
         .Requires(() => Configuration.Equals(Configuration.Release))
         //.Requires(() => GitHubAuthenticationToken)
         //.OnlyWhenDynamic(() => GitVersion.BranchName.Equals("master") || GitVersion.BranchName.Equals("origin/master"))
-        .Produces(PackagesDirectory)
+        //.Produces(ArtifactsDirectory)
+        .Triggers(CreateRelease)
         .Executes(() =>
         {
             var name = Solution.WinMemoryCleaner_Service.Name;
             var publishedPackagePath = OutputDirectory / "publish" / name;
-            var package = PackagesDirectory / $"WindowsService_{GitVersion.SemVer}.zip";
+            var package = ArtifactsDirectory / $"WindowsService_{GitVersion.SemVer}.zip";
 
             DotNetPublish(s => s
                 .SetProject(Solution.WinMemoryCleaner_Service)
                 .SetConfiguration(Configuration)
-                .EnablePublishSingleFile()
-                .EnablePublishTrimmed()
-                .EnablePublishReadyToRun()
-                .EnableSelfContained()
+                //.EnablePublishSingleFile()
+                //.EnablePublishTrimmed()
+                //.EnablePublishReadyToRun()
+                //.EnableSelfContained()
                 
-                .SetRuntime("win-x64")
+                // .SetRuntime("win-x64")
                 .SetOutput(publishedPackagePath)
                 .EnableNoBuild()
                 .EnableNoRestore()
                 .SetNoLogo(true)
             );
             DeleteFile(package);
-            EnsureExistingDirectory(PackagesDirectory);
+            EnsureExistingDirectory(ArtifactsDirectory);
             ZipFile.CreateFromDirectory(publishedPackagePath, package);
         });
+
+    Target CreateRelease => _ => _
+       .Description($"Creating release for the publishable version.")
+       .Requires(() => Configuration.Equals(Configuration.Release))
+       .Requires(() => GitHubActions.Token)
+       // .OnlyWhenStatic(() => GitRepository.IsOnMainOrMasterBranch() || GitRepository.IsOnReleaseBranch())
+       .Executes(async () =>
+       {
+            var credentials = new Credentials(GitHubActions.Token);
+            GitHubTasks.GitHubClient = new GitHubClient(new ProductHeaderValue(nameof(NukeBuild)),
+               new InMemoryCredentialStore(credentials));
+
+            var (owner, name) = (GitRepository.GetGitHubOwner(), GitRepository.GetGitHubName());
+
+            var releaseTag = GitVersion.NuGetVersionV2;
+            var changeLogSectionEntries = ChangelogTasks.ExtractChangelogSectionNotes(ChangeLogFile);
+            var latestChangeLog = changeLogSectionEntries
+               .Aggregate((c, n) => c + Environment.NewLine + n);
+
+            var newRelease = new NewRelease(releaseTag)
+            {
+                TargetCommitish = GitVersion.Sha,
+                Draft = true,
+                Name = $"v{releaseTag}",
+                Prerelease = !string.IsNullOrEmpty(GitVersion.PreReleaseTag),
+                Body = latestChangeLog
+            };
+
+            var createdRelease = await GitHubTasks
+                .GitHubClient
+                .Repository
+                .Release.Create(owner, name, newRelease);
+
+            PathConstruction
+                .GlobFiles(ArtifactsDirectory, "*.zip")
+                //.Where(x => !x.EndsWith(ExcludedArtifactsType))
+                .ForEach(async x => await UploadReleaseAssetToGithub(createdRelease, x));
+
+            await GitHubTasks
+                .GitHubClient
+                .Repository
+                .Release
+                .Edit(owner, name, createdRelease.Id, new ReleaseUpdate { Draft = false });
+
+           static async Task UploadReleaseAssetToGithub(Release release, string asset)
+           {
+               await using var artifactStream = File.OpenRead(asset);
+               var fileName = Path.GetFileName(asset);
+               var assetUpload = new ReleaseAssetUpload
+               {
+                   FileName = fileName,
+                   ContentType = PackageContentType,
+                   RawData = artifactStream,
+               };
+               await GitHubTasks.GitHubClient.Repository.Release.UploadAsset(release, assetUpload);
+           }
+       });
+
+   
 }

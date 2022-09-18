@@ -38,8 +38,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Content Update="appsettings.Development.json">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Content>
+	  <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never"/>
 	</ItemGroup>
 </Project>
