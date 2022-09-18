@@ -25,8 +25,8 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     //GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     FetchDepth = 0,
-    //OnPullRequestExcludePaths = new[] { "*.md", "**/*.md" },
-    //OnPushExcludePaths = new[] { "*.md", "**/*.md" },
+    OnPullRequestExcludePaths = new[] { "*.md", "**/*.md" },
+    OnPushExcludePaths = new[] { "*.md", "**/*.md" },
     OnPushBranches = new[] { "master", "feature/**", "release/**" },
     OnPullRequestBranches = new[] { "master", "feature/**", "release/**" },
     InvokedTargets = new[] {

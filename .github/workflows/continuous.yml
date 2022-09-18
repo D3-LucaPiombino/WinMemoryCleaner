@@ -22,11 +22,17 @@ on:
       - master
       - 'feature/**'
       - 'release/**'
+    paths:
+      - '!*.md'
+      - '!**/*.md'
   pull_request:
     branches:
       - master
       - 'feature/**'
       - 'release/**'
+    paths:
+      - '!*.md'
+      - '!**/*.md'
 
 jobs:
   windows-latest:
