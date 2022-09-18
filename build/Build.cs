@@ -176,9 +176,10 @@ class Build : NukeBuild
 
             Serilog.Log.Information("Create draft release {releaseName}", release.Name);
 
-            artifacts
-                //.Where(x => !x.EndsWith(ExcludedArtifactsType))
-                .ForEach(async x => await UploadReleaseAssetToGithub(release, x));
+            foreach (var artifact in artifacts)
+            {
+                await UploadReleaseAssetToGithub(release, artifact);
+            }
 
             if (!GitHubActions.IsPullRequest)
             {
