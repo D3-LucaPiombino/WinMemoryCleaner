@@ -22,17 +22,31 @@ on:
       - master
       - 'feature/**'
       - 'release/**'
-    paths:
-      - '!*.md'
-      - '!**/*.md'
+    tags:
+      - 'v1*'
+      - 'v2*'
+      - 'v3*'
+      - 'v4*'
+      - 'v5*'
+    paths-ignore:
+      - 'docs/**/*'
+      - '**/*.md'
+      - '*.md'
   pull_request:
     branches:
       - master
       - 'feature/**'
       - 'release/**'
-    paths:
-      - '!*.md'
-      - '!**/*.md'
+    tags:
+      - 'v1*'
+      - 'v2*'
+      - 'v3*'
+      - 'v4*'
+      - 'v5*'
+    paths-ignore:
+      - 'docs/**/*'
+      - '**/*.md'
+      - '*.md'
 
 jobs:
   windows-latest:

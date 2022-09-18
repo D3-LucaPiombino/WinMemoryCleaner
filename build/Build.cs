@@ -23,19 +23,33 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     "continuous",
     GitHubActionsImage.WindowsLatest,
     //GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
+
+    // Unit nuke properly support path exclusions (see below)
+    // this need to stay disabled unfortunately.
+    AutoGenerate = false,
     FetchDepth = 0,
-    OnPullRequestExcludePaths = new[] { "*.md", "**/*.md" },
-    OnPushExcludePaths = new[] { "*.md", "**/*.md" },
+
+    // Does not work because nuke generate
+    //  paths:
+    //      - '!{expression}'
+    // instead of
+    //  paths-ignore:
+    //      - '{expression}'
+    // and this cause the workflow to never trigger
+    
+    // OnPullRequestExcludePaths = new[] { "*.md", "**/*.md" },
+    // OnPushExcludePaths = new[] { "*.md", "**/*.md" },
+
     OnPushBranches = new[] { "master", "feature/**", "release/**" },
     OnPullRequestBranches = new[] { "master", "feature/**", "release/**" },
     InvokedTargets = new[] {
         nameof(Compile),
     },
     EnableGitHubToken = true,
-    PublishArtifacts = true
-    //OnPullRequestTags = new[] { "publish_*" },
-    //OnPushTags = new[] { "publish_*" }
+    PublishArtifacts = true,
+
+    OnPullRequestTags = new[] { "v1*", "v2*", "v3*", "v4*", "v5*" },
+    OnPushTags = new[] { "v1*", "v2*", "v3*", "v4*", "v5*" }
     //ImportSecrets = new[] { nameof(MyGetApiKey), nameof(NuGetApiKey) }
 )]
 class Build : NukeBuild
