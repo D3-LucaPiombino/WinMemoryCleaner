@@ -8,13 +8,11 @@
 [![](https://img.shields.io/badge/Windows%20Server-2008%20|%202012%20|%202016%20|%202019%20|%202022-blue?style=for-the-badge)](#)
 
 [![](https://img.shields.io/github/license/D3-LucaPiombino/WinMemoryCleaner?style=for-the-badge)](#) 
-[![](https://img.shields.io/github/downloads/D3-LucaPiombino/WinMemoryCleaner/total?style=for-the-badge)](#) 
+[![](https://img.shields.io/github/downloads/D3-LucaPiombino/WinMemoryCleaner/total?style=for-the-badge)](https://github.com/D3-LucaPiombino/WinMemoryCleaner/releases) 
 
 The app is a free RAM cleaner. There are times when programs do not release the memory they used, making the machine slow, but you 
 don’t want to restart the system to get the used memory back. That is where you use Windows Memory Cleaner to clean your memory, 
 so you can carry on working without wasting time restarting your Windows. 
-
-[![Download)](https://img.shields.io/github/v/release/D3-LucaPiombino/WinMemoryCleaner?color=red&label=DOWNLOAD&logo=windows)](https://github.com/D3-LucaPiombino/WinMemoryCleaner/releases)
 
 ## 🚀 How it works
 
