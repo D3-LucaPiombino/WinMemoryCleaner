@@ -25,6 +25,8 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     //GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     FetchDepth = 0,
+    OnPullRequestExcludePaths = new[] { "*.md", "**/*.md" },
+    OnPushExcludePaths = new[] { "*.md", "**/*.md" },
     OnPushBranches = new[] { "master", "feature/**", "release/**" },
     OnPullRequestBranches = new[] { "release/**", "feature/**" },
     InvokedTargets = new[] {
@@ -33,7 +35,7 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     EnableGitHubToken = true,
     PublishArtifacts = true,
     OnPullRequestTags = new[] { "publish/**" },
-    OnPushTags = new[] { "" }
+    OnPushTags = new[] { "publish/**" }
     //ImportSecrets = new[] { nameof(MyGetApiKey), nameof(NuGetApiKey) }
 )]
 class Build : NukeBuild
