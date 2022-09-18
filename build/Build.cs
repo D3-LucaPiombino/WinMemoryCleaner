@@ -60,7 +60,7 @@ class Build : NukeBuild
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
     ///   - Microsoft VSCode           https://nuke.build/vscode
 
-    public static int Main () => Execute<Build>(x => x.Compile);
+    public static int Main() => Execute<Build>(x => x.Compile);
 
     [Nuke.Common.Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
@@ -82,6 +82,23 @@ class Build : NukeBuild
     static GitHubActions GitHubActions => GitHubActions.Instance;
     static string PackageContentType => "application/octet-stream";
     static string ChangeLogFile => RootDirectory / "CHANGELOG.md";
+
+    
+    protected override void OnBuildCreated()
+    {
+        var githubRef = Environment.GetEnvironmentVariable("GITHUB_REF");
+        if (githubRef?.StartsWith("refs/tags", StringComparison.InvariantCultureIgnoreCase) == true)
+        {
+            Serilog.Log.Information(
+                "GITHUB_REF is {GITHUB_REF}. " +
+                "Apply workaround for GitVersion when building release tags with GitHubActions. Clear GITHUB_REF",
+                githubRef
+            );
+            Environment.SetEnvironmentVariable("GITHUB_REF", "", EnvironmentVariableTarget.Process);
+            Environment.SetEnvironmentVariable("GITHUB_REF", "", EnvironmentVariableTarget.User);
+        }
+        base.OnBuildCreated();
+    }
 
     Target Clean => _ => _
         .Description($"Clean")

@@ -24,11 +24,8 @@ on:
       - 'feature/**'
       - 'release/**'
     tags:
-      - 'v1*'
-      - 'v2*'
-      - 'v3*'
-      - 'v4*'
-      - 'v5*'
+      - '*.*.*'
+      - 'v*.*.*'
     paths-ignore:
       - 'docs/**/*'
       - '**/*.md'
@@ -39,11 +36,8 @@ on:
       - 'feature/**'
       - 'release/**'
     tags:
-      - 'v1*'
-      - 'v2*'
-      - 'v3*'
-      - 'v4*'
-      - 'v5*'
+      - '*.*.*'
+      - 'v*.*.*'
     paths-ignore:
       - 'docs/**/*'
       - '**/*.md'
