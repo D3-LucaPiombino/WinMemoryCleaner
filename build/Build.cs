@@ -28,14 +28,14 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     OnPullRequestExcludePaths = new[] { "*.md", "**/*.md" },
     OnPushExcludePaths = new[] { "*.md", "**/*.md" },
     OnPushBranches = new[] { "master", "feature/**", "release/**" },
-    OnPullRequestBranches = new[] { "release/**", "feature/**" },
+    OnPullRequestBranches = new[] { "master", "feature/**", "release/**" },
     InvokedTargets = new[] {
         nameof(Compile),
     },
     EnableGitHubToken = true,
     PublishArtifacts = true,
-    OnPullRequestTags = new[] { "publish/**" },
-    OnPushTags = new[] { "publish/**" }
+    OnPullRequestTags = new[] { "publish_*" },
+    OnPushTags = new[] { "publish_*" }
     //ImportSecrets = new[] { nameof(MyGetApiKey), nameof(NuGetApiKey) }
 )]
 class Build : NukeBuild
